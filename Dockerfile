@@ -25,7 +25,7 @@ FROM base as deps
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
     --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+    npm ci --omit=dev 
 
 ################################################################################
 # Create a stage for building the application.
@@ -52,10 +52,11 @@ FROM base as final
 ENV NODE_ENV production
 
 # Run the application as a non-root user.
-USER node
+USER root
 
 # Copy package.json so that package manager commands can be used.
 COPY package.json .
+
 COPY .env .
 
 # Copy the production dependencies from the deps stage and also
@@ -67,5 +68,8 @@ COPY --from=build /usr/src/app/dist ./dist
 # Expose the port that the application listens on.
 EXPOSE 8080
 
+RUN npm install pm2 -g
+
 # Run the application.
-CMD node dist/index.js
+CMD ["pm2-runtime", "dist/index.js"]
+
