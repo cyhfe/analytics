@@ -1,5 +1,5 @@
 import express, { NextFunction, Response, Request } from "express";
-import router from "./router";
+import { router } from "./router";
 import morgan from "morgan";
 import cors from "cors";
 
@@ -12,9 +12,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.log(err);
-  res.json({ message: `had an error: ${err}` });
+  res.json({ message: `uncatch: ${err}` });
 });
 
-export default app;
+export { app };
