@@ -13,5 +13,6 @@ jobs:
         run: |
           touch .env
           echo PORT=${{vars.PORT}} >> .env
+          echo DATABASE_URL=${{vars.DATABASE_URL}} >> .env
           docker compose config
           docker compose -p analytics-server up --build -d
