@@ -61,7 +61,7 @@ COPY package.json .
 
 COPY .env .
 
-COPY prisma/schema.prisma prisma/schema.prisma
+COPY prisma prisma
 
 # Copy the production dependencies from the deps stage and also
 # the built application from the build stage into the image.
