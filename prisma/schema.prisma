@@ -11,6 +11,12 @@ datasource db {
 }
 
 model Website {
-  id      Int      @id @default(autoincrement())
-  url     String     
+  id     Int    @id @default(autoincrement())
+  name   String
+  domain String
+}
+
+model User {
+  id Int    @id @default(autoincrement())
+  ip String @unique
 }
