@@ -70,7 +70,7 @@ COPY --from=build /usr/src/app/dist ./dist
 
 
 # Expose the port that the application listens on.
-EXPOSE 8080
+EXPOSE 4002
 
 RUN npx prisma migrate deploy
 # Run the application.
