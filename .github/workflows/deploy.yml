@@ -12,5 +12,6 @@ jobs:
       - name: run docker compose
         run: |
           touch .env
-          echo PORT=${{secrets.PORT}} >> .env
+          echo PORT=${{vars.PORT}} >> .env
+          docker compose config
           docker compose -p analytics-server up --build -d
