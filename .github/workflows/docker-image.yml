@@ -1,0 +1,16 @@
+name: run docker compose
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - name: run docker compose
+        run: |
+          touch .env
+          echo PORT=${{secrets.PORT}} >> .env
+          docker compose -p analytics-server up --build -d
