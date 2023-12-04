@@ -86,7 +86,9 @@ router.post("/analytics/enter", async (req, res, next) => {
 
 router.post("/analytics/leave", async (req, res, next) => {
   const { pageViewsData, screen, language, referrer, sessionId } = req.body;
-
+  if (!sessionId) {
+    return res.send("require sessionId");
+  }
   try {
     const session = await prisma.session.findUnique({
       where: {
@@ -128,6 +130,7 @@ router.post("/analytics/leave", async (req, res, next) => {
     res.send("ok");
   } catch (error) {
     next(error);
+    console.log(error);
   }
 });
 
