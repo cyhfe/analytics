@@ -1,15 +1,18 @@
 import { Router } from "express";
 import UAParser from "ua-parser-js";
-import { prisma } from "./prismaClient";
+import { prisma } from "../prismaClient";
 import { Prisma } from "@prisma/client";
-import { BadRequestError } from "./error";
+import { BadRequestError } from "../error";
+
 const router = Router();
 
-router.get("/analytics/metrics", async (req, res, next) => {
+router.get("/");
+
+router.get("/stats", async (req, res, next) => {
   try {
-    const { wid } = req.body as { wid: string };
-    console.log(wid);
-    if (!wid) throw new BadRequestError({ message: "missing wid" });
+    const { wid } = req.query;
+    if (typeof wid !== "string")
+      throw new BadRequestError({ message: "missing wid" });
     const uniqueVisitors = await prisma.session.count({
       where: {
         wid,
@@ -54,37 +57,26 @@ router.get("/analytics/metrics", async (req, res, next) => {
       },
     });
 
-    const groupBy = await prisma.session.groupBy({
-      by: ["createdAt"],
-      _count: {
-        online: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    if (avgVisitDuration == null) {
+      return next(new Error("avgVisitDuration is null"));
+    }
 
-    const groupBy2 = await prisma.session.groupBy({
-      by: ["createdAt"],
-      _count: {
-        id: true,
+    const viewData = await prisma.viewData.findMany({
+      where: {
+        wid,
       },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    const groupBy3 = await prisma.viewData.groupBy({
-      by: ["createdAt"],
-      _sum: {
+      select: {
+        createdAt: true,
         duration: true,
       },
       orderBy: {
-        createdAt: "desc",
+        createdAt: "asc",
       },
     });
 
-    console.log(groupBy, groupBy2, groupBy3);
+    console.log(viewData);
+
+    // console.log(groupBy, groupBy2, groupBy3);
 
     res.status(200);
     return res.json({
@@ -100,7 +92,7 @@ router.get("/analytics/metrics", async (req, res, next) => {
   }
 });
 
-router.post("/analytics/enter", async (req, res, next) => {
+router.post("/enter", async (req, res, next) => {
   const { wid, sessionId } = req.body;
 
   if (sessionId) {
@@ -179,7 +171,7 @@ router.post("/analytics/enter", async (req, res, next) => {
   }
 });
 
-router.post("/analytics/leave", async (req, res, next) => {
+router.post("/leave", async (req, res, next) => {
   const { pageViewsData, screen, language, referrer, sessionId, wid } =
     req.body;
   if (!sessionId) {
@@ -245,4 +237,4 @@ router.post("/analytics/leave", async (req, res, next) => {
   }
 });
 
-export { router };
+export { router as analyticsRouter };

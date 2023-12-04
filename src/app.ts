@@ -1,5 +1,5 @@
 import express from "express";
-import { router } from "./router";
+import { router } from "./router/api";
 import morgan from "morgan";
 import cors from "cors";
 import { errorHandler } from "./middleware/errorHandler";

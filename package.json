@@ -4,6 +4,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/luxon": "^3.3.6",
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.10.2",
     "@types/ua-parser-js": "^0.7.39",
@@ -22,6 +23,7 @@
     "express": "^4.18.2",
     "geoip-lite": "^1.4.9",
     "ipaddr.js": "^2.1.0",
+    "luxon": "^3.4.4",
     "morgan": "^1.10.0",
     "node-ipinfo": "^3.5.1",
     "ua-parser-js": "^1.0.37"
