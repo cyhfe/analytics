@@ -2,8 +2,36 @@ import { Router } from "express";
 import UAParser from "ua-parser-js";
 import { prisma } from "./prismaClient";
 import { Prisma } from "@prisma/client";
-
+import { BadRequestError } from "./error";
 const router = Router();
+
+router.get("/analytics/metrics", async (req, res, next) => {
+  try {
+    const { wid } = req.body as { wid: string };
+    console.log(wid);
+    if (!wid) throw new BadRequestError({ message: "missing wid" });
+    const uniqueVisitors = await prisma.session.count({
+      where: {
+        wid,
+      },
+    });
+
+    const onlineVisitors = await prisma.session.count({
+      where: {
+        wid,
+        online: true,
+      },
+    });
+
+    res.status(200);
+    return res.json({
+      uniqueVisitors,
+      onlineVisitors,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post("/analytics/enter", async (req, res, next) => {
   const { wid, sessionId } = req.body;
@@ -127,6 +155,16 @@ router.post("/analytics/leave", async (req, res, next) => {
         },
       });
     }
+
+    await prisma.session.update({
+      where: {
+        id: sessionId,
+      },
+      data: {
+        online: false,
+      },
+    });
+
     res.send("ok");
   } catch (error) {
     next(error);

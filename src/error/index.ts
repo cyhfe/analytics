@@ -15,7 +15,7 @@ export abstract class CustomError extends Error {
   }
 }
 
-export default class BadRequestError extends CustomError {
+export class BadRequestError extends CustomError {
   private static readonly _statusCode = 400;
   private readonly _code: number;
   private readonly _logging: boolean;
