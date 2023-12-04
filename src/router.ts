@@ -6,8 +6,27 @@ import { Prisma } from "@prisma/client";
 const router = Router();
 
 router.post("/analytics/enter", async (req, res, next) => {
-  const { wid } = req.body;
-  console.log(wid);
+  const { wid, sessionId } = req.body;
+
+  if (sessionId) {
+    console.log("enter again");
+    try {
+      await prisma.session.update({
+        where: {
+          id: sessionId,
+        },
+        data: {
+          online: true,
+        },
+      });
+      res.send(sessionId);
+    } catch (error) {
+      next("error");
+    }
+    return;
+  }
+
+  console.log("first enter");
 
   let ip = "::ffff:112.10.225.55";
   if (ip.startsWith("::ffff:")) {
@@ -28,7 +47,7 @@ router.post("/analytics/enter", async (req, res, next) => {
     session = await prisma.session.findUnique({
       where: {
         wid,
-        newuser: {
+        unique_user: {
           ip,
           browser: browser.name ?? "",
           os: os.name ?? "",
@@ -58,19 +77,7 @@ router.post("/analytics/enter", async (req, res, next) => {
       },
     });
 
-    setTimeout(async () => {
-      session &&
-        (await prisma.session.update({
-          where: {
-            id: session.id,
-          },
-          data: {
-            online: false,
-          },
-        }));
-    }, 5 * 60 * 1000);
-
-    res.send("ok");
+    res.send(session.id);
   } catch (error) {
     console.log(error);
     next(error);
@@ -78,8 +85,50 @@ router.post("/analytics/enter", async (req, res, next) => {
 });
 
 router.post("/analytics/leave", async (req, res, next) => {
-  console.log(req.body);
-  res.send("ok");
+  const { pageViewsData, screen, language, referrer, sessionId } = req.body;
+
+  try {
+    const session = await prisma.session.findUnique({
+      where: {
+        id: sessionId,
+      },
+    });
+
+    if (!session) {
+      return res.send("require sessionId");
+    }
+
+    for (const pathname in pageViewsData) {
+      let page: Prisma.PromiseReturnType<typeof prisma.page.findUnique>;
+      page = await prisma.page.findUnique({
+        where: {
+          pathname,
+        },
+      });
+      if (!page) {
+        page = await prisma.page.create({
+          data: {
+            pathname,
+          },
+        });
+      }
+
+      await prisma.viewData.create({
+        data: {
+          sessionId: session.id,
+          pageId: page.id,
+          duration: pageViewsData[pathname].duration,
+          count: pageViewsData[pathname].count,
+          referrer,
+          screen,
+          language,
+        },
+      });
+    }
+    res.send("ok");
+  } catch (error) {
+    next(error);
+  }
 });
 
 export { router };
