@@ -11,11 +11,14 @@ datasource db {
 }
 
 model Website {
-  id        String    @id @default(uuid())
-  domain    String    @unique
-  sessions  Session[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id       String    @id @default(uuid())
+  domain   String    @unique
+  sessions Session[]
+  pages    Page[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  ViewData  ViewData[]
 }
 
 model Session {
@@ -42,12 +45,17 @@ model Page {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   viewData  ViewData[]
+  wid       String
+  website   Website    @relation(fields: [wid], references: [id])
 }
 
 model ViewData {
-  id        String   @id @default(uuid())
-  viewer    Session  @relation(fields: [sessionId], references: [id])
-  page      Page     @relation(fields: [pageId], references: [id])
+  id      String  @id @default(uuid())
+  viewer  Session @relation(fields: [sessionId], references: [id])
+  page    Page    @relation(fields: [pageId], references: [id])
+  wid     String
+  website Website @relation(fields: [wid], references: [id])
+
   sessionId String
   pageId    String
   duration  Int

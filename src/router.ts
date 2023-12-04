@@ -16,6 +16,12 @@ router.get("/analytics/metrics", async (req, res, next) => {
       },
     });
 
+    const totalVisits = await prisma.viewData.count({
+      where: {
+        wid,
+      },
+    });
+
     const onlineVisitors = await prisma.session.count({
       where: {
         wid,
@@ -23,10 +29,71 @@ router.get("/analytics/metrics", async (req, res, next) => {
       },
     });
 
+    const {
+      _sum: { count: totalPageViews },
+    } = await prisma.viewData.aggregate({
+      _sum: {
+        count: true,
+      },
+    });
+
+    if (totalPageViews == null) {
+      return next(new Error("totalPageViews is null"));
+    }
+
+    const viewsPerVisit = totalPageViews / totalVisits;
+
+    const {
+      _avg: { duration: avgVisitDuration },
+    } = await prisma.viewData.aggregate({
+      _avg: {
+        duration: true,
+      },
+      where: {
+        wid,
+      },
+    });
+
+    const groupBy = await prisma.session.groupBy({
+      by: ["createdAt"],
+      _count: {
+        online: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const groupBy2 = await prisma.session.groupBy({
+      by: ["createdAt"],
+      _count: {
+        id: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const groupBy3 = await prisma.viewData.groupBy({
+      by: ["createdAt"],
+      _sum: {
+        duration: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    console.log(groupBy, groupBy2, groupBy3);
+
     res.status(200);
     return res.json({
       uniqueVisitors,
       onlineVisitors,
+      totalVisits,
+      totalPageViews,
+      viewsPerVisit,
+      avgVisitDuration,
     });
   } catch (error) {
     next(error);
@@ -113,9 +180,13 @@ router.post("/analytics/enter", async (req, res, next) => {
 });
 
 router.post("/analytics/leave", async (req, res, next) => {
-  const { pageViewsData, screen, language, referrer, sessionId } = req.body;
+  const { pageViewsData, screen, language, referrer, sessionId, wid } =
+    req.body;
   if (!sessionId) {
     return res.send("require sessionId");
+  }
+  if (!wid) {
+    return res.send("require wid");
   }
   try {
     const session = await prisma.session.findUnique({
@@ -138,6 +209,7 @@ router.post("/analytics/leave", async (req, res, next) => {
       if (!page) {
         page = await prisma.page.create({
           data: {
+            wid,
             pathname,
           },
         });
@@ -145,6 +217,7 @@ router.post("/analytics/leave", async (req, res, next) => {
 
       await prisma.viewData.create({
         data: {
+          wid,
           sessionId: session.id,
           pageId: page.id,
           duration: pageViewsData[pathname].duration,
@@ -158,7 +231,7 @@ router.post("/analytics/leave", async (req, res, next) => {
 
     await prisma.session.update({
       where: {
-        id: sessionId,
+        id: session.id,
       },
       data: {
         online: false,
