@@ -3,7 +3,6 @@ import { router } from "./router";
 import morgan from "morgan";
 import cors from "cors";
 import { errorHandler } from "./middleware/errorHandler";
-
 const app = express();
 
 app.set("trust proxy", true);

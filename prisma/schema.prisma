@@ -11,12 +11,31 @@ datasource db {
 }
 
 model Website {
-  id     Int    @id @default(autoincrement())
-  name   String
-  domain String
+  id       String    @id @default(uuid())
+  domain   String    @unique
+  sessions Session[]
 }
 
-model User {
-  id Int    @id @default(autoincrement())
-  ip String @unique
+model Session {
+  id       String  @id @default(uuid())
+  ip       String
+  online   Boolean
+  browser  String
+  os       String
+  device   String?
+  country  String?
+  referer  String?
+  duration String?
+  pages    Page[]
+  wid      String
+  website  Website @relation(fields: [wid], references: [id])
+
+  @@unique(fields: [ip, browser, os], name: "newuser")
+}
+
+model Page {
+  id       String    @id @default(uuid())
+  pathname String    @unique
+  views    Int
+  viewers  Session[]
 }
