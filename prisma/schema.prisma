@@ -11,9 +11,11 @@ datasource db {
 }
 
 model Website {
-  id       String    @id @default(uuid())
-  domain   String    @unique
-  sessions Session[]
+  id        String    @id @default(uuid())
+  domain    String    @unique
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Session {
@@ -25,17 +27,34 @@ model Session {
   device   String?
   country  String?
   referer  String?
-  duration String?
-  pages    Page[]
-  wid      String
-  website  Website @relation(fields: [wid], references: [id])
+  duration Int?
 
-  @@unique(fields: [ip, browser, os], name: "newuser")
+  wid       String
+  website   Website    @relation(fields: [wid], references: [id])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  viewData  ViewData[]
+
+  @@unique(fields: [ip, browser, os], name: "unique_user")
 }
 
 model Page {
-  id       String    @id @default(uuid())
-  pathname String    @unique
-  views    Int
-  viewers  Session[]
+  id        String     @id @default(uuid())
+  pathname  String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  viewData  ViewData[]
+}
+
+model ViewData {
+  id        String   @id @default(uuid())
+  viewer    Session  @relation(fields: [sessionId], references: [id])
+  page      Page     @relation(fields: [pageId], references: [id])
+  sessionId String
+  pageId    String
+  duration  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, pageId])
 }
