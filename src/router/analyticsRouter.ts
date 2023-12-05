@@ -3,7 +3,7 @@ import UAParser from "ua-parser-js";
 import { prisma } from "../prismaClient";
 import { Prisma } from "@prisma/client";
 import { BadRequestError } from "../error";
-
+import dayjs from "dayjs";
 const router = Router();
 
 router.get("/");
@@ -68,6 +68,7 @@ router.get("/stats", async (req, res, next) => {
       select: {
         createdAt: true,
         duration: true,
+        count: true,
       },
       orderBy: {
         createdAt: "asc",
@@ -76,7 +77,20 @@ router.get("/stats", async (req, res, next) => {
 
     console.log(viewData);
 
-    // console.log(groupBy, groupBy2, groupBy3);
+    type ViewDataAccumulator = {
+      [key: string]: { duration: number; count: number };
+    };
+    const viewDataAccumulator: ViewDataAccumulator = viewData.reduce(
+      (groups: ViewDataAccumulator, item) => {
+        const key = dayjs(item.createdAt).format("YYYY-MM-DD HH:00:00");
+        groups[key] = {
+          duration: (groups[key]?.duration ?? 0) + item.duration,
+          count: (groups[key]?.count ?? 0) + item.count,
+        };
+        return groups;
+      },
+      Object.assign({})
+    );
 
     res.status(200);
     return res.json({
@@ -86,8 +100,10 @@ router.get("/stats", async (req, res, next) => {
       totalPageViews,
       viewsPerVisit,
       avgVisitDuration,
+      viewDataAccumulator,
     });
   } catch (error) {
+    console.log(error);
     next(error);
   }
 });
