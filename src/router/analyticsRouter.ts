@@ -11,40 +11,6 @@ type ViewDataAccumulator = {
   [key: string]: { duration: number; count: number };
 };
 
-// const viewDataGroupType = ["country", "os", "browser", "device"] as const;
-// type ViewDataGroupType = (typeof viewDataGroupType)[number];
-// router.get("/viewDataGroup", async (req, res, next) => {
-//   const { wid, type } = req.query;
-//   if (typeof wid !== "string")
-//     return next(new BadRequestError({ message: "missing wid" }));
-//   if (!viewDataGroupType.includes(type as ViewDataGroupType))
-//     return next(new BadRequestError({ message: "invalid type" }));
-
-//   try {
-//     const data = await prisma.viewData.groupBy({
-//       where: {
-//         wid,
-//       },
-//       by: [type as ViewDataGroupType],
-//       _sum: {
-//         count: true,
-//         duration: true,
-//       },
-//     });
-
-//     const totalCount = data.reduce(
-//       (sum, group) => sum + (group._sum.count ?? 0),
-//       0
-//     );
-
-//     console.log(data);
-//     res.send({ [type as ViewDataGroupType]: data, totalCount });
-//   } catch (error) {
-//     console.log(error);
-//     next(error);
-//   }
-// });
-
 router.get("/pages", async (req, res, next) => {
   const { wid } = req.query;
   if (typeof wid !== "string")
@@ -63,49 +29,86 @@ router.get("/pages", async (req, res, next) => {
       },
     });
 
-    console.log(pages);
-    res.send({ pages });
-    // res.send({ pages, totalCount });
+    const prettier = pages.map(({ pathname, _sum, _count }) => ({
+      pathname,
+      duration: _sum.duration,
+      count: _sum.count,
+      sessions: _count.sessionId,
+    }));
+
+    res.json({ pages: prettier });
   } catch (error) {
     console.log(error);
     next(error);
   }
 });
 
-router.get("/referrer", async (req, res, next) => {
+router.get("/referrers", async (req, res, next) => {
   const { wid } = req.query;
   if (typeof wid !== "string")
     return next(new BadRequestError({ message: "missing wid" }));
 
   try {
-    const referrer = await prisma.viewData.groupBy({
-      where: {
-        wid,
-      },
+    const referrers = await prisma.viewData.groupBy({
+      where: { wid },
       by: ["referrer"],
-      _count: {
-        referrer: true,
+      _sum: {
+        count: true,
+        duration: true,
       },
-      orderBy: {
-        _count: {
-          referrer: "desc",
-        },
+      _count: {
+        sessionId: true,
       },
     });
 
-    const prettier = referrer.map(({ referrer, _count }) => ({
+    const prettier = referrers.map(({ referrer, _sum, _count }) => ({
       referrer,
-      count: _count.referrer,
+      duration: _sum.duration,
+      count: _sum.count,
+      sessions: _count.sessionId,
     }));
 
-    const totalCount = prettier.reduce((sum, group) => sum + group.count, 0);
-
-    res.json({ referrer: prettier, totalCount });
+    res.json({ referrers: prettier });
   } catch (error) {
     console.log(error);
     next(error);
   }
 });
+
+// router.get("/referrer", async (req, res, next) => {
+//   const { wid } = req.query;
+//   if (typeof wid !== "string")
+//     return next(new BadRequestError({ message: "missing wid" }));
+
+//   try {
+//     const referrer = await prisma.viewData.groupBy({
+//       where: {
+//         wid,
+//       },
+//       by: ["referrer"],
+//       _count: {
+//         referrer: true,
+//       },
+//       orderBy: {
+//         _count: {
+//           referrer: "desc",
+//         },
+//       },
+//     });
+
+//     const prettier = referrer.map(({ referrer, _count }) => ({
+//       referrer,
+//       count: _count.referrer,
+//     }));
+
+//     const totalCount = prettier.reduce((sum, group) => sum + group.count, 0);
+
+//     res.json({ referrer: prettier, totalCount });
+//   } catch (error) {
+//     console.log(error);
+//     next(error);
+//   }
+// });
 
 router.get("/viewData", async (req, res, next) => {
   const { wid } = req.query;
