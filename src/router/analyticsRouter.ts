@@ -4,11 +4,51 @@ import { prisma } from "../prismaClient";
 import { Prisma } from "@prisma/client";
 import { BadRequestError } from "../error";
 import dayjs from "dayjs";
+
 const router = Router();
 
 type ViewDataAccumulator = {
   [key: string]: { duration: number; count: number };
 };
+
+router.get("/pages", async (req, res, next) => {
+  const { wid } = req.query;
+  if (typeof wid !== "string")
+    return next(new BadRequestError({ message: "missing wid" }));
+
+  try {
+    const pages = await prisma.page.findMany({
+      where: {
+        wid,
+      },
+
+      include: {
+        _count: {
+          select: {
+            viewData: true,
+          },
+        },
+      },
+
+      orderBy: {
+        viewData: {
+          _count: "desc",
+        },
+      },
+    });
+
+    const totalCount = pages.reduce(
+      (sum, group) => sum + group._count.viewData,
+      0
+    );
+
+    console.log(pages);
+    res.send({ pages, totalCount });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
 
 router.get("/referrer", async (req, res, next) => {
   const { wid } = req.query;
