@@ -11,64 +11,51 @@ datasource db {
 }
 
 model Website {
-  id       String    @id @default(uuid())
-  domain   String    @unique
-  sessions Session[]
-  pages    Page[]
+  id String @id @default(uuid())
 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  domain String @unique
+
+  sessions  Session[]
   viewDatas ViewData[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Session {
-  id     String  @id @default(uuid())
-  ip     String  @unique
-  online Boolean
-
-  browser String?
-  os      String?
-  device  String?
+  id      String  @id @default(uuid())
+  ip      String  @unique
   country String?
+  online  Boolean
+  browser String
+  os      String
+  device  String
 
-  wid       String
-  website   Website    @relation(fields: [wid], references: [id])
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  viewData  ViewData[]
+  website Website @relation(fields: [wid], references: [id])
+  wid     String
 
-  @@unique(fields: [ip, browser, os], name: "unique_user")
-}
+  viewData ViewData[]
 
-model Page {
-  id        String     @id @default(uuid())
-  pathname  String     @unique
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  viewData  ViewData[]
-  wid       String
-  website   Website    @relation(fields: [wid], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique(fields: [ip, browser, os, device], name: "unique_user")
 }
 
 model ViewData {
   id      String  @id @default(uuid())
   viewer  Session @relation(fields: [sessionId], references: [id])
-  page    Page    @relation(fields: [pageId], references: [id])
   wid     String
   website Website @relation(fields: [wid], references: [id])
 
   sessionId String
-  pageId    String
+  pathname  String
   duration  Int
   count     Int
   referrer  String?
   language  String?
   screen    String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  browser String?
-  os      String?
-  device  String?
-  country String?
 }

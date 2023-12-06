@@ -11,39 +11,39 @@ type ViewDataAccumulator = {
   [key: string]: { duration: number; count: number };
 };
 
-const viewDataGroupType = ["country", "os", "browser", "device"] as const;
-type ViewDataGroupType = (typeof viewDataGroupType)[number];
-router.get("/viewDataGroup", async (req, res, next) => {
-  const { wid, type } = req.query;
-  if (typeof wid !== "string")
-    return next(new BadRequestError({ message: "missing wid" }));
-  if (!viewDataGroupType.includes(type as ViewDataGroupType))
-    return next(new BadRequestError({ message: "invalid type" }));
+// const viewDataGroupType = ["country", "os", "browser", "device"] as const;
+// type ViewDataGroupType = (typeof viewDataGroupType)[number];
+// router.get("/viewDataGroup", async (req, res, next) => {
+//   const { wid, type } = req.query;
+//   if (typeof wid !== "string")
+//     return next(new BadRequestError({ message: "missing wid" }));
+//   if (!viewDataGroupType.includes(type as ViewDataGroupType))
+//     return next(new BadRequestError({ message: "invalid type" }));
 
-  try {
-    const data = await prisma.viewData.groupBy({
-      where: {
-        wid,
-      },
-      by: [type as ViewDataGroupType],
-      _sum: {
-        count: true,
-        duration: true,
-      },
-    });
+//   try {
+//     const data = await prisma.viewData.groupBy({
+//       where: {
+//         wid,
+//       },
+//       by: [type as ViewDataGroupType],
+//       _sum: {
+//         count: true,
+//         duration: true,
+//       },
+//     });
 
-    const totalCount = data.reduce(
-      (sum, group) => sum + (group._sum.count ?? 0),
-      0
-    );
+//     const totalCount = data.reduce(
+//       (sum, group) => sum + (group._sum.count ?? 0),
+//       0
+//     );
 
-    console.log(data);
-    res.send({ [type as ViewDataGroupType]: data, totalCount });
-  } catch (error) {
-    console.log(error);
-    next(error);
-  }
-});
+//     console.log(data);
+//     res.send({ [type as ViewDataGroupType]: data, totalCount });
+//   } catch (error) {
+//     console.log(error);
+//     next(error);
+//   }
+// });
 
 router.get("/pages", async (req, res, next) => {
   const { wid } = req.query;
@@ -51,33 +51,38 @@ router.get("/pages", async (req, res, next) => {
     return next(new BadRequestError({ message: "missing wid" }));
 
   try {
-    const pages = await prisma.page.findMany({
-      where: {
-        wid,
-      },
+    // const pages = await prisma.page.findMany({
+    //   where: {
+    //     wid,
+    //   },
 
-      include: {
-        _count: {
-          select: {
-            viewData: true,
-          },
-        },
-      },
+    //   select: {
+    //     _count: {
+    //       select: {
+    //         viewData: true,
+    //       },
+    //     },
+    //     pathname: true,
+    //     viewData: true,
+    //   },
+    // });
 
-      orderBy: {
-        viewData: {
-          _count: "desc",
-        },
+    // const totalCount = pages.reduce(
+    //   (sum, group) => sum + group._count.viewData,
+    //   0
+    // );
+
+    const pages = await prisma.viewData.groupBy({
+      where: { wid },
+      by: ["pathname"],
+      _sum: {
+        count: true,
       },
     });
 
-    const totalCount = pages.reduce(
-      (sum, group) => sum + group._count.viewData,
-      0
-    );
-
     console.log(pages);
-    res.send({ pages, totalCount });
+    res.send({ pages });
+    // res.send({ pages, totalCount });
   } catch (error) {
     console.log(error);
     next(error);
@@ -306,6 +311,7 @@ router.post("/enter", async (req, res, next) => {
           ip,
           browser: browser.name ?? "",
           os: os.name ?? "",
+          device: device.model ?? "",
         },
       },
     });
@@ -317,7 +323,7 @@ router.post("/enter", async (req, res, next) => {
           online: true,
           browser: browser.name ?? "",
           os: os.name ?? "",
-          device: device.model,
+          device: device.model ?? "",
           country: country_name,
         },
       });
@@ -360,35 +366,16 @@ router.post("/leave", async (req, res, next) => {
     }
 
     for (const pathname in pageViewsData) {
-      let page: Prisma.PromiseReturnType<typeof prisma.page.findUnique>;
-      page = await prisma.page.findUnique({
-        where: {
-          pathname,
-        },
-      });
-      if (!page) {
-        page = await prisma.page.create({
-          data: {
-            wid,
-            pathname,
-          },
-        });
-      }
-
       await prisma.viewData.create({
         data: {
           wid,
           sessionId: session.id,
-          pageId: page.id,
+          pathname,
           duration: pageViewsData[pathname].duration,
           count: pageViewsData[pathname].count,
           referrer,
           screen,
           language,
-          browser: session.browser,
-          os: session.os,
-          device: session.device,
-          country: session.country,
         },
       });
     }

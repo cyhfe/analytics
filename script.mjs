@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function main() {
   const website = await prisma.website.create({
     data: {
-      domain: "ui.icyh.me",
+      domain: "d3.icyh.me",
     },
   });
 
