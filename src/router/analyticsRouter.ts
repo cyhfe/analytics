@@ -6,13 +6,109 @@ import { BadRequestError } from "../error";
 import dayjs from "dayjs";
 const router = Router();
 
-router.get("/");
+type ViewDataAccumulator = {
+  [key: string]: { duration: number; count: number };
+};
+
+router.get("/referrer", async (req, res, next) => {
+  const { wid } = req.query;
+  if (typeof wid !== "string")
+    return next(new BadRequestError({ message: "missing wid" }));
+
+  try {
+    const referrer = await prisma.viewData.groupBy({
+      where: {
+        wid,
+      },
+      by: ["referrer"],
+      _count: {
+        referrer: true,
+      },
+      orderBy: {
+        _count: {
+          referrer: "desc",
+        },
+      },
+    });
+
+    const prettier = referrer.map(({ referrer, _count }) => ({
+      referrer,
+      count: _count.referrer,
+    }));
+
+    const totalCount = prettier.reduce((sum, group) => sum + group.count, 0);
+
+    res.json({ referrer: prettier, totalCount });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
+router.get("/viewData", async (req, res, next) => {
+  const { wid } = req.query;
+  if (typeof wid !== "string")
+    return next(new BadRequestError({ message: "missing wid" }));
+
+  try {
+    const viewData = await prisma.viewData.findMany({
+      where: {
+        wid,
+      },
+      select: {
+        createdAt: true,
+        duration: true,
+        count: true,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+    const viewDataAccumulator: ViewDataAccumulator = viewData.reduce(
+      (groups: ViewDataAccumulator, item) => {
+        const key = new Date(
+          dayjs(item.createdAt).format("YYYY-MM-DD HH:00:00")
+        ).getTime();
+
+        groups[key] = {
+          duration: (groups[key]?.duration ?? 0) + item.duration,
+          count: (groups[key]?.count ?? 0) + item.count,
+        };
+        return groups;
+      },
+      Object.assign({})
+    );
+
+    res.json({ viewDataAccumulator });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
+router.get("/online", async (req, res, next) => {
+  const { wid } = req.query;
+  if (typeof wid !== "string")
+    return next(new BadRequestError({ message: "missing wid" }));
+  try {
+    const onlineVisitors = await prisma.session.count({
+      where: {
+        wid,
+        online: true,
+      },
+    });
+    res.json({ onlineVisitors });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
 
 router.get("/stats", async (req, res, next) => {
   try {
     const { wid } = req.query;
     if (typeof wid !== "string")
-      throw new BadRequestError({ message: "missing wid" });
+      return next(new BadRequestError({ message: "missing wid" }));
     const uniqueVisitors = await prisma.session.count({
       where: {
         wid,
@@ -22,13 +118,6 @@ router.get("/stats", async (req, res, next) => {
     const totalVisits = await prisma.viewData.count({
       where: {
         wid,
-      },
-    });
-
-    const onlineVisitors = await prisma.session.count({
-      where: {
-        wid,
-        online: true,
       },
     });
 
@@ -44,7 +133,7 @@ router.get("/stats", async (req, res, next) => {
       return next(new Error("totalPageViews is null"));
     }
 
-    const viewsPerVisit = totalPageViews / totalVisits;
+    const viewsPerVisit = (totalPageViews / totalVisits).toFixed(2);
 
     const {
       _avg: { duration: avgVisitDuration },
@@ -61,47 +150,30 @@ router.get("/stats", async (req, res, next) => {
       return next(new Error("avgVisitDuration is null"));
     }
 
-    const viewData = await prisma.viewData.findMany({
-      where: {
-        wid,
-      },
-      select: {
-        createdAt: true,
-        duration: true,
-        count: true,
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-    });
-
-    console.log(viewData);
-
-    type ViewDataAccumulator = {
-      [key: string]: { duration: number; count: number };
-    };
-    const viewDataAccumulator: ViewDataAccumulator = viewData.reduce(
-      (groups: ViewDataAccumulator, item) => {
-        const key = dayjs(item.createdAt).format("YYYY-MM-DD HH:00:00");
-        groups[key] = {
-          duration: (groups[key]?.duration ?? 0) + item.duration,
-          count: (groups[key]?.count ?? 0) + item.count,
-        };
-        return groups;
-      },
-      Object.assign({})
-    );
-
     res.status(200);
     return res.json({
       uniqueVisitors,
-      onlineVisitors,
       totalVisits,
       totalPageViews,
       viewsPerVisit,
       avgVisitDuration,
-      viewDataAccumulator,
     });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
+router.get("/websites", async (req, res, next) => {
+  try {
+    const websites = await prisma.website.findMany({
+      select: {
+        domain: true,
+        id: true,
+      },
+    });
+    res.status(200);
+    res.json(websites);
   } catch (error) {
     console.log(error);
     next(error);
@@ -112,7 +184,6 @@ router.post("/enter", async (req, res, next) => {
   const { wid, sessionId } = req.body;
 
   if (sessionId) {
-    console.log("enter again");
     try {
       await prisma.session.update({
         where: {
@@ -128,8 +199,6 @@ router.post("/enter", async (req, res, next) => {
     }
     return;
   }
-
-  console.log("first enter");
 
   let ip = "::ffff:112.10.225.55";
   if (ip.startsWith("::ffff:")) {
