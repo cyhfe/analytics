@@ -75,40 +75,56 @@ router.get("/referrers", async (req, res, next) => {
   }
 });
 
-// router.get("/referrer", async (req, res, next) => {
-//   const { wid } = req.query;
-//   if (typeof wid !== "string")
-//     return next(new BadRequestError({ message: "missing wid" }));
+router.get("/countries", async (req, res, next) => {
+  const { wid } = req.query;
+  if (typeof wid !== "string")
+    return next(new BadRequestError({ message: "missing wid" }));
 
-//   try {
-//     const referrer = await prisma.viewData.groupBy({
-//       where: {
-//         wid,
-//       },
-//       by: ["referrer"],
-//       _count: {
-//         referrer: true,
-//       },
-//       orderBy: {
-//         _count: {
-//           referrer: "desc",
-//         },
-//       },
-//     });
+  try {
+    const cData = await prisma.session.groupBy({
+      by: ["country"],
+      where: {
+        wid,
+      },
+      _count: {
+        _all: true,
+      },
+    });
 
-//     const prettier = referrer.map(({ referrer, _count }) => ({
-//       referrer,
-//       count: _count.referrer,
-//     }));
+    const countrySessionMap = cData.reduce((accu, item) => {
+      accu[item.country ?? ""] = item._count._all;
+      return accu;
+    }, Object.assign({}));
+    console.log(cData, countrySessionMap);
+    const data = await prisma.viewData.findMany({
+      where: { wid },
+      select: {
+        count: true,
+        duration: true,
+        viewer: {
+          select: {
+            country: true,
+          },
+        },
+      },
+    });
 
-//     const totalCount = prettier.reduce((sum, group) => sum + group.count, 0);
-
-//     res.json({ referrer: prettier, totalCount });
-//   } catch (error) {
-//     console.log(error);
-//     next(error);
-//   }
-// });
+    const countries = data.reduce((acc, item) => {
+      if (item.viewer.country != null) {
+        acc[item.viewer.country] = {
+          count: (acc[item.viewer.country]?.count ?? 0) + item.count,
+          duration: (acc[item.viewer.country]?.duration ?? 0) + item.duration,
+          sessions: countrySessionMap[item.viewer.country] ?? 0,
+        };
+      }
+      return acc;
+    }, Object.assign({}));
+    res.json(countries);
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
 
 router.get("/viewData", async (req, res, next) => {
   const { wid } = req.query;
