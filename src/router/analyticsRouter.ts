@@ -109,7 +109,7 @@ router.get("/countries", async (req, res, next) => {
       },
     });
 
-    const countries = data.reduce((acc, item) => {
+    const countriesObj = data.reduce((acc, item) => {
       if (item.viewer.country != null) {
         acc[item.viewer.country] = {
           count: (acc[item.viewer.country]?.count ?? 0) + item.count,
@@ -119,7 +119,13 @@ router.get("/countries", async (req, res, next) => {
       }
       return acc;
     }, Object.assign({}));
-    res.json(countries);
+
+    const countries = Object.keys(countriesObj).map((key) => ({
+      country: key,
+      ...countriesObj[key],
+    }));
+
+    res.json({ countries });
   } catch (error) {
     console.log(error);
     next(error);
