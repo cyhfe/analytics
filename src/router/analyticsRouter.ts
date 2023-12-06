@@ -51,32 +51,15 @@ router.get("/pages", async (req, res, next) => {
     return next(new BadRequestError({ message: "missing wid" }));
 
   try {
-    // const pages = await prisma.page.findMany({
-    //   where: {
-    //     wid,
-    //   },
-
-    //   select: {
-    //     _count: {
-    //       select: {
-    //         viewData: true,
-    //       },
-    //     },
-    //     pathname: true,
-    //     viewData: true,
-    //   },
-    // });
-
-    // const totalCount = pages.reduce(
-    //   (sum, group) => sum + group._count.viewData,
-    //   0
-    // );
-
     const pages = await prisma.viewData.groupBy({
       where: { wid },
       by: ["pathname"],
       _sum: {
         count: true,
+        duration: true,
+      },
+      _count: {
+        sessionId: true,
       },
     });
 

@@ -24,7 +24,7 @@ model Website {
 
 model Session {
   id      String  @id @default(uuid())
-  ip      String  @unique
+  ip      String
   country String?
   online  Boolean
   browser String
@@ -43,18 +43,20 @@ model Session {
 }
 
 model ViewData {
-  id      String  @id @default(uuid())
-  viewer  Session @relation(fields: [sessionId], references: [id])
+  id String @id @default(uuid())
+
+  viewer    Session @relation(fields: [sessionId], references: [id])
+  sessionId String
+
   wid     String
   website Website @relation(fields: [wid], references: [id])
 
-  sessionId String
-  pathname  String
-  duration  Int
-  count     Int
-  referrer  String?
-  language  String?
-  screen    String?
+  pathname String
+  duration Int
+  count    Int
+  referrer String?
+  language String?
+  screen   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
