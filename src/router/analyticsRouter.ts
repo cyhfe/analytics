@@ -11,6 +11,40 @@ type ViewDataAccumulator = {
   [key: string]: { duration: number; count: number };
 };
 
+const viewDataGroupType = ["country", "os", "browser", "device"] as const;
+type ViewDataGroupType = (typeof viewDataGroupType)[number];
+router.get("/viewDataGroup", async (req, res, next) => {
+  const { wid, type } = req.query;
+  if (typeof wid !== "string")
+    return next(new BadRequestError({ message: "missing wid" }));
+  if (!viewDataGroupType.includes(type as ViewDataGroupType))
+    return next(new BadRequestError({ message: "invalid type" }));
+
+  try {
+    const data = await prisma.viewData.groupBy({
+      where: {
+        wid,
+      },
+      by: [type as ViewDataGroupType],
+      _sum: {
+        count: true,
+        duration: true,
+      },
+    });
+
+    const totalCount = data.reduce(
+      (sum, group) => sum + (group._sum.count ?? 0),
+      0
+    );
+
+    console.log(data);
+    res.send({ [type as ViewDataGroupType]: data, totalCount });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
 router.get("/pages", async (req, res, next) => {
   const { wid } = req.query;
   if (typeof wid !== "string")
@@ -240,10 +274,19 @@ router.post("/enter", async (req, res, next) => {
     return;
   }
 
-  let ip = "::ffff:112.10.225.55";
-  if (ip.startsWith("::ffff:")) {
-    ip = ip.slice(7);
-  }
+  const ips = [
+    "67.72.64.195",
+    "127.50.157.183",
+    "221.133.81.195",
+    "115.184.179.162",
+    "72.231.199.205",
+  ];
+  // let ip = "::ffff:112.10.225.55";
+  // if (ip.startsWith("::ffff:")) {
+  //   ip = ip.slice(7);
+  // }
+
+  const ip = ips[Math.floor(Math.random() * ips.length)];
 
   const { country_name }: { country_name: string | undefined } = await (
     await fetch("https://api.iplocation.net/?ip=" + ip)
@@ -342,6 +385,10 @@ router.post("/leave", async (req, res, next) => {
           referrer,
           screen,
           language,
+          browser: session.browser,
+          os: session.os,
+          device: session.device,
+          country: session.country,
         },
       });
     }

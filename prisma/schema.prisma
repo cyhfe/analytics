@@ -18,15 +18,16 @@ model Website {
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  ViewData  ViewData[]
+  viewDatas ViewData[]
 }
 
 model Session {
-  id      String  @id @default(uuid())
-  ip      String
-  online  Boolean
-  browser String
-  os      String
+  id     String  @id @default(uuid())
+  ip     String  @unique
+  online Boolean
+
+  browser String?
+  os      String?
   device  String?
   country String?
 
@@ -65,4 +66,9 @@ model ViewData {
   screen    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  browser String?
+  os      String?
+  device  String?
+  country String?
 }
