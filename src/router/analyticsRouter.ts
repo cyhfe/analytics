@@ -3,13 +3,9 @@ import UAParser from "ua-parser-js";
 import { prisma } from "../prismaClient";
 import { Prisma } from "@prisma/client";
 import { BadRequestError } from "../error";
-import dayjs from "dayjs";
+import { dayjs, intervalTime, timeDuration } from "../utils";
 
 const router = Router();
-
-type ViewDataAccumulator = {
-  [key: string]: { duration: number; count: number };
-};
 
 router.get("/pages", async (req, res, next) => {
   const { wid } = req.query;
@@ -132,41 +128,38 @@ router.get("/countries", async (req, res, next) => {
   }
 });
 
-router.get("/viewData", async (req, res, next) => {
+router.get("/uv", async (req, res, next) => {
   const { wid } = req.query;
   if (typeof wid !== "string")
     return next(new BadRequestError({ message: "missing wid" }));
 
   try {
-    const viewData = await prisma.viewData.findMany({
+    const data = await prisma.session.findMany({
       where: {
         wid,
       },
       select: {
         createdAt: true,
-        duration: true,
-        count: true,
       },
       orderBy: {
         createdAt: "asc",
       },
     });
-    const viewDataAccumulator: ViewDataAccumulator = viewData.reduce(
-      (groups: ViewDataAccumulator, item) => {
-        const key = new Date(
-          dayjs(item.createdAt).format("YYYY-MM-DD HH:00:00")
-        ).getTime();
 
-        groups[key] = {
-          duration: (groups[key]?.duration ?? 0) + item.duration,
-          count: (groups[key]?.count ?? 0) + item.count,
-        };
-        return groups;
-      },
-      Object.assign({})
-    );
+    const uvObj = data.reduce((acc, item) => {
+      const key = dayjs(item.createdAt).format("YYYY-MM-DD HH:00:00");
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, Object.assign({}));
 
-    res.json({ viewDataAccumulator });
+    const uv = Object.keys(uvObj).map((key) => {
+      return {
+        timestamp: new Date(key).getTime(),
+        count: uvObj[key],
+      };
+    });
+
+    res.json({ uv });
   } catch (error) {
     console.log(error);
     next(error);
