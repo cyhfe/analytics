@@ -18,21 +18,74 @@ export function timeDuration(time: number) {
   return d.format(f);
 }
 
-type Interval = "min" | "hour" | "day" | "week" | "month";
+export type Filter = "day" | "week" | "month" | "year" | "alltime";
 
-export function intervalTime(time: dayjs.ConfigType, interval: Interval) {
-  switch (interval) {
-    case "min":
-      return dayjs(time).format("YYYY-MM-DD HH:mm");
-    case "hour":
-      return dayjs(time).format("YYYY-MM-DD HH");
+export function deteRangeByFilter(filter: unknown) {
+  let dateRange;
+  switch (filter) {
     case "day":
-      return dayjs(time).format("YYYY-MM-DD");
+      dateRange = [
+        dayjs().startOf("day").format(),
+        dayjs().endOf("day").format(),
+      ];
+      break;
     case "week":
-      return dayjs(time).week();
+      dateRange = [
+        dayjs().startOf("week").format(),
+        dayjs().endOf("week").format(),
+      ];
+      break;
+
+    case "month":
+      dateRange = [
+        dayjs().startOf("month").format(),
+        dayjs().endOf("month").format(),
+      ];
+      break;
+    case "year":
+      dateRange = [
+        dayjs().startOf("year").format(),
+        dayjs().endOf("year").format(),
+      ];
+      break;
     default:
-      return dayjs(time).format("YYYY-MM-DD HH:mm:ss");
+      break;
   }
+  return dateRange;
+}
+
+export function getDateRange(filter: unknown) {
+  let dateRange;
+  switch (filter) {
+    case "day":
+      dateRange = [
+        dayjs().startOf("day").format("YYYY-MM-DD HH:00:00"),
+        dayjs().endOf("day").format("YYYY-MM-DD HH:00:00"),
+      ];
+      break;
+    case "week":
+      dateRange = [
+        dayjs().startOf("week").format("YYYY-MM-DD HH:00:00"),
+        dayjs().endOf("week").format("YYYY-MM-DD HH:00:00"),
+      ];
+      break;
+
+    case "month":
+      dateRange = [
+        dayjs().startOf("month").format("YYYY-MM-DD HH:00:00"),
+        dayjs().endOf("month").format("YYYY-MM-DD HH:00:00"),
+      ];
+      break;
+    case "year":
+      dateRange = [
+        dayjs().startOf("year").format("YYYY-MM-DD HH:00:00"),
+        dayjs().endOf("year").format("YYYY-MM-DD HH:00:00"),
+      ];
+      break;
+    default:
+      break;
+  }
+  return dateRange;
 }
 
 export { dayjs };

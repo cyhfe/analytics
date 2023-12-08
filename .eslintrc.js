@@ -22,5 +22,7 @@ module.exports = {
   },
   plugins: ["@typescript-eslint"],
   ignorePatterns: ["tracker/**/*.js"],
-  rules: {},
+  rules: {
+    "@typescript-eslint/ban-ts-comment": 0,
+  },
 };
