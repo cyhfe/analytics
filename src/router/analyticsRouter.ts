@@ -603,4 +603,19 @@ router.post("/leave", async (req, res, next) => {
   }
 });
 
+router.post("website", async (req, res, next) => {
+  const { domain } = req.body;
+  try {
+    const website = await prisma.website.create({
+      data: {
+        domain: domain,
+      },
+    });
+
+    res.send(website.id);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export { router as analyticsRouter };
