@@ -485,19 +485,20 @@ router.post("/enter", async (req, res, next) => {
     return;
   }
 
-  const ips = [
-    "67.72.64.195",
-    "127.50.157.183",
-    "221.133.81.195",
-    "115.184.179.162",
-    "72.231.199.205",
-  ];
-  // let ip = "::ffff:112.10.225.55";
-  // if (ip.startsWith("::ffff:")) {
-  //   ip = ip.slice(7);
-  // }
+  // mock ips
+  // const ips = [
+  //   "67.72.64.195",
+  //   "127.50.157.183",
+  //   "221.133.81.195",
+  //   "115.184.179.162",
+  //   "72.231.199.205",
+  // ];
+  // const ip = ips[Math.floor(Math.random() * ips.length)];
 
-  const ip = ips[Math.floor(Math.random() * ips.length)];
+  let ip = "::ffff:112.10.225.55";
+  if (ip.startsWith("::ffff:")) {
+    ip = ip.slice(7);
+  }
 
   const { country_name }: { country_name: string | undefined } = await (
     await fetch("https://api.iplocation.net/?ip=" + ip)
