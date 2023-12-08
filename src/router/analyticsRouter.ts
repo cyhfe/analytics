@@ -508,10 +508,8 @@ router.post("/enter", async (req, res, next) => {
 
   const { browser, os, device } = parser.getResult();
 
-  let session: Prisma.PromiseReturnType<typeof prisma.session.findUnique>;
-
   try {
-    session = await prisma.session.findUnique({
+    let session = await prisma.session.findUnique({
       where: {
         wid,
         unique_user: {
