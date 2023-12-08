@@ -1,7 +1,6 @@
 import { Router } from "express";
 import UAParser from "ua-parser-js";
 import { prisma } from "../prismaClient";
-import { Prisma } from "@prisma/client";
 import { BadRequestError } from "../error";
 import { getDateRange, dayjs, deteRangeByFilter } from "../utils";
 
@@ -627,6 +626,7 @@ router.get("/website", async (req, res, next) => {
 
     res.send(website);
   } catch (error) {
+    console.log(error);
     next(error);
   }
 });

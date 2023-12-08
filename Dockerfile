@@ -73,6 +73,7 @@ COPY --from=build /usr/src/app/dist ./dist
 EXPOSE 4002
 
 RUN npx prisma migrate deploy
+RUN npx prisma generate
 # Run the application.
 CMD ["pm2-runtime", "dist/index.js"]
 
