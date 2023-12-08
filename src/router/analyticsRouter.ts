@@ -603,7 +603,7 @@ router.post("/leave", async (req, res, next) => {
   }
 });
 
-router.post("website", async (req, res, next) => {
+router.post("/website", async (req, res, next) => {
   const { domain } = req.body;
   try {
     const website = await prisma.website.create({
@@ -613,6 +613,21 @@ router.post("website", async (req, res, next) => {
     });
 
     res.send(website.id);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/website", async (req, res, next) => {
+  try {
+    const website = await prisma.website.findMany({
+      select: {
+        id: true,
+        domain: true,
+      },
+    });
+
+    res.send(website);
   } catch (error) {
     next(error);
   }
