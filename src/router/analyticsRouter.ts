@@ -303,7 +303,7 @@ router.get("/charts", async (req, res, next) => {
     const dateRange = getDateRange(filter);
 
     // uv
-    let uv: unknown;
+    let uv;
     if (dateRange) {
       uv = await prisma.$queryRaw`
       SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch', 'localtime')) AS timestamp,
@@ -324,7 +324,7 @@ router.get("/charts", async (req, res, next) => {
       `;
     }
 
-    let pv: unknown;
+    let pv;
     if (dateRange) {
       pv = await prisma.$queryRaw`
          SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch', 'localtime')) AS timestamp,
@@ -349,7 +349,21 @@ router.get("/charts", async (req, res, next) => {
          `;
     }
 
-    res.json({ uv, pv });
+    const pvFormat = pv.map((item) => {
+      return {
+        ...item,
+        timestamp: new Date(item.timestamp).getTime(),
+      };
+    });
+
+    const uvFormat = uv.map((item) => {
+      return {
+        ...item,
+        timestamp: new Date(item.timestamp).getTime(),
+      };
+    });
+
+    res.json({ uv: uvFormat, pv: pvFormat });
   } catch (error) {
     console.log(error);
     next(error);
