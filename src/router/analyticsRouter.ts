@@ -479,11 +479,11 @@ router.get("/websites", async (req, res, next) => {
 
 router.post("/enter", async (req, res, next) => {
   const { wid, sessionId } = req.body;
-  console.log(wid, sessionId);
+  console.log(sessionId);
 
   if (sessionId) {
     try {
-      await prisma.session.update({
+      const update = await prisma.session.update({
         where: {
           id: sessionId,
         },
@@ -491,13 +491,67 @@ router.post("/enter", async (req, res, next) => {
           online: true,
         },
       });
-      res.send(sessionId);
+      res.json({ sessionId: update.id });
+    } catch (error) {
+      next(error);
+    }
+  } else {
+    let ip = "::ffff:112.10.225.55";
+    if (ip.startsWith("::ffff:")) {
+      ip = ip.slice(7);
+    }
+
+    const { country_name }: { country_name: string | undefined } = await (
+      await fetch("https://api.iplocation.net/?ip=" + ip)
+    ).json();
+
+    const parser = new UAParser(req.headers["user-agent"]); // you need to pass the user-agent for nodejs
+
+    const { browser, os, device } = parser.getResult();
+    try {
+      const session = await prisma.session.findUnique({
+        where: {
+          wid,
+          unique_user: {
+            wid,
+            ip,
+            browser: browser.name ?? "",
+            os: os.name ?? "",
+            device: device.model ?? "",
+          },
+        },
+      });
+      console.log(session, "unique");
+      if (session) {
+        const update = await prisma.session.update({
+          where: {
+            id: session.id,
+          },
+          data: {
+            online: true,
+          },
+        });
+        res.json({ sessionId: update.id });
+      } else {
+        const created = await prisma.session.create({
+          data: {
+            wid,
+            ip,
+            online: true,
+            browser: browser.name ?? "",
+            os: os.name ?? "",
+            device: device.model ?? "",
+            country: country_name,
+          },
+        });
+        res.json({ sessionId: created.id });
+      }
     } catch (error) {
       console.log(error);
       next(error);
     }
-    return;
   }
+  return;
 
   // mock ips
   // const ips = [
@@ -508,61 +562,6 @@ router.post("/enter", async (req, res, next) => {
   //   "72.231.199.205",
   // ];
   // const ip = ips[Math.floor(Math.random() * ips.length)];
-
-  let ip = "::ffff:112.10.225.55";
-  if (ip.startsWith("::ffff:")) {
-    ip = ip.slice(7);
-  }
-
-  const { country_name }: { country_name: string | undefined } = await (
-    await fetch("https://api.iplocation.net/?ip=" + ip)
-  ).json();
-
-  const parser = new UAParser(req.headers["user-agent"]); // you need to pass the user-agent for nodejs
-
-  const { browser, os, device } = parser.getResult();
-
-  try {
-    const session = await prisma.session.findUnique({
-      where: {
-        wid,
-        unique_user: {
-          wid,
-          ip,
-          browser: browser.name ?? "",
-          os: os.name ?? "",
-          device: device.model ?? "",
-        },
-      },
-    });
-    if (session) {
-      await prisma.session.update({
-        where: {
-          id: session.id,
-        },
-        data: {
-          online: true,
-        },
-      });
-      res.send(session.id);
-    } else {
-      await prisma.session.create({
-        data: {
-          wid,
-          ip,
-          online: true,
-          browser: browser.name ?? "",
-          os: os.name ?? "",
-          device: device.model ?? "",
-          country: country_name,
-        },
-      });
-      res.send(session.id);
-    }
-  } catch (error) {
-    console.log(error);
-    next(error);
-  }
 });
 
 router.post("/leave", async (req, res, next) => {
