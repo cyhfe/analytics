@@ -306,17 +306,17 @@ router.get("/charts", async (req, res, next) => {
     let uv: unknown;
     if (dateRange) {
       uv = await prisma.$queryRaw`
-      SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch')) AS timestamp,
+      SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch', 'localtime')) AS timestamp,
        COUNT(*) AS amt 
       FROM Session 
-      WHERE strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch')) 
+      WHERE strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch', 'localtime')) 
             BETWEEN ${dateRange[0]} AND ${dateRange[1]}
             AND wid = ${wid}
       GROUP BY timestamp;
       `;
     } else {
       uv = await prisma.$queryRaw`
-      SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch')) AS timestamp,
+      SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch', 'localtime')) AS timestamp,
        COUNT(*) AS amt 
       FROM Session 
       WHERE wid = ${wid}
@@ -324,23 +324,22 @@ router.get("/charts", async (req, res, next) => {
       `;
     }
 
-    // pv
     let pv: unknown;
     if (dateRange) {
       pv = await prisma.$queryRaw`
-         SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch')) AS timestamp,
+         SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch', 'localtime')) AS timestamp,
           COUNT(*) AS amt,
           SUM(count) AS count,
           SUM(duration) AS duration
          FROM ViewData
-         WHERE strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch')) 
+         WHERE strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch', 'localtime')) 
                BETWEEN ${dateRange[0]} AND ${dateRange[1]}
                AND wid = ${wid}
          GROUP BY timestamp;
          `;
     } else {
       pv = await prisma.$queryRaw`
-         SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch')) AS timestamp,
+         SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch', 'localtime')) AS timestamp,
           COUNT(*) AS amt,
           SUM(count) AS count,
           SUM(duration) AS duration
