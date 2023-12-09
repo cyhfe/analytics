@@ -523,7 +523,7 @@ router.post("/enter", async (req, res, next) => {
   const { browser, os, device } = parser.getResult();
 
   try {
-    let session = await prisma.session.findUnique({
+    const session = await prisma.session.findUnique({
       where: {
         wid,
         unique_user: {
@@ -535,9 +535,18 @@ router.post("/enter", async (req, res, next) => {
         },
       },
     });
-    console.log(session, "session");
-    if (session == null) {
-      session = await prisma.session.create({
+    if (session) {
+      await prisma.session.update({
+        where: {
+          id: session.id,
+        },
+        data: {
+          online: true,
+        },
+      });
+      res.send(session.id);
+    } else {
+      await prisma.session.create({
         data: {
           wid,
           ip,
@@ -548,18 +557,8 @@ router.post("/enter", async (req, res, next) => {
           country: country_name,
         },
       });
+      res.send(session.id);
     }
-
-    await prisma.session.update({
-      where: {
-        id: session.id,
-      },
-      data: {
-        online: true,
-      },
-    });
-
-    res.send(session.id);
   } catch (error) {
     console.log(error);
     next(error);
