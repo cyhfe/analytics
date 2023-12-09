@@ -17,7 +17,7 @@ router.get("/pages", async (req, res, next) => {
     return next(new BadRequestError({ message: "missing wid" }));
 
   try {
-    const pages = await prisma.viewData.groupBy({
+    const data = await prisma.viewData.groupBy({
       where: { wid },
       by: ["pathname"],
       _sum: {
@@ -25,18 +25,18 @@ router.get("/pages", async (req, res, next) => {
         duration: true,
       },
       _count: {
-        sessionId: true,
+        pathname: true,
       },
     });
 
-    const prettier = pages.map(({ pathname, _sum, _count }) => ({
-      pathname,
-      duration: _sum.duration,
-      count: _sum.count,
-      sessions: _count.sessionId,
+    const pages = data.map((d) => ({
+      pathname: d.pathname,
+      duration: d._sum.duration,
+      count: d._sum.count,
+      sessions: d._count.pathname,
     }));
 
-    res.json({ pages: prettier });
+    res.json({ pages });
   } catch (error) {
     console.log(error);
     next(error);
@@ -53,39 +53,39 @@ router.get("/devices", async (req, res, next) => {
       where: { wid },
       by: ["browser"],
       _count: {
-        _all: true,
+        browser: true,
       },
     });
 
     const browser = browserArray.map((b) => ({
       name: b.browser,
-      count: b._count._all,
+      count: b._count.browser,
     }));
 
     const deviceArray = await prisma.session.groupBy({
       where: { wid },
       by: ["device"],
       _count: {
-        _all: true,
+        device: true,
       },
     });
 
     const device = deviceArray.map((d) => ({
       name: d.device,
-      count: d._count._all,
+      count: d._count.device,
     }));
 
     const osArray = await prisma.session.groupBy({
       where: { wid },
       by: ["os"],
       _count: {
-        _all: true,
+        os: true,
       },
     });
 
     const os = osArray.map((o) => ({
       name: o.os,
-      count: o._count._all,
+      count: o._count.os,
     }));
 
     res.json({
@@ -113,7 +113,7 @@ router.get("/referrers", async (req, res, next) => {
         duration: true,
       },
       _count: {
-        sessionId: true,
+        referrer: true,
       },
     });
 
@@ -121,7 +121,7 @@ router.get("/referrers", async (req, res, next) => {
       referrer,
       duration: _sum.duration,
       count: _sum.count,
-      sessions: _count.sessionId,
+      sessions: _count.referrer,
     }));
 
     res.json({ referrers: prettier });
@@ -143,12 +143,12 @@ router.get("/countries", async (req, res, next) => {
         wid,
       },
       _count: {
-        _all: true,
+        country: true,
       },
     });
 
     const countrySessionMap = cData.reduce((accu, item) => {
-      accu[item.country ?? ""] = item._count._all;
+      accu[item.country ?? ""] = item._count.country;
       return accu;
     }, Object.assign({}));
     const data = await prisma.viewData.findMany({
@@ -303,7 +303,7 @@ router.get("/charts", async (req, res, next) => {
     const dateRange = getDateRange(filter);
 
     // uv
-    let uv;
+    let uv: unknown;
     if (dateRange) {
       uv = await prisma.$queryRaw`
       SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch')) AS timestamp,
@@ -325,7 +325,7 @@ router.get("/charts", async (req, res, next) => {
     }
 
     // pv
-    let pv;
+    let pv: unknown;
     if (dateRange) {
       pv = await prisma.$queryRaw`
          SELECT strftime('%Y-%m-%d %H:00:00', datetime(createdAt/1000, 'unixepoch')) AS timestamp,
