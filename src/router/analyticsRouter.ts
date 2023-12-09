@@ -479,6 +479,7 @@ router.get("/websites", async (req, res, next) => {
 
 router.post("/enter", async (req, res, next) => {
   const { wid, sessionId } = req.body;
+  console.log(wid, sessionId);
 
   if (sessionId) {
     try {
@@ -492,7 +493,8 @@ router.post("/enter", async (req, res, next) => {
       });
       res.send(sessionId);
     } catch (error) {
-      next("error");
+      console.log(error);
+      next(error);
     }
     return;
   }
@@ -525,6 +527,7 @@ router.post("/enter", async (req, res, next) => {
       where: {
         wid,
         unique_user: {
+          wid,
           ip,
           browser: browser.name ?? "",
           os: os.name ?? "",
@@ -532,6 +535,7 @@ router.post("/enter", async (req, res, next) => {
         },
       },
     });
+    console.log(session, "session");
     if (session == null) {
       session = await prisma.session.create({
         data: {
