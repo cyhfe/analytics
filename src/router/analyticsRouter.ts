@@ -25,7 +25,7 @@ router.get("/pages", async (req, res, next) => {
         duration: true,
       },
       _count: {
-        pathname: true,
+        _all: true,
       },
     });
 
@@ -33,7 +33,7 @@ router.get("/pages", async (req, res, next) => {
       pathname: d.pathname,
       duration: d._sum.duration,
       count: d._sum.count,
-      sessions: d._count.pathname,
+      sessions: d._count._all,
     }));
 
     res.json({ pages });
@@ -53,39 +53,39 @@ router.get("/devices", async (req, res, next) => {
       where: { wid },
       by: ["browser"],
       _count: {
-        browser: true,
+        _all: true,
       },
     });
 
     const browser = browserArray.map((b) => ({
       name: b.browser,
-      count: b._count.browser,
+      count: b._count._all,
     }));
 
     const deviceArray = await prisma.session.groupBy({
       where: { wid },
       by: ["device"],
       _count: {
-        device: true,
+        _all: true,
       },
     });
 
     const device = deviceArray.map((d) => ({
       name: d.device,
-      count: d._count.device,
+      count: d._count._all,
     }));
 
     const osArray = await prisma.session.groupBy({
       where: { wid },
       by: ["os"],
       _count: {
-        os: true,
+        _all: true,
       },
     });
 
     const os = osArray.map((o) => ({
       name: o.os,
-      count: o._count.os,
+      count: o._count._all,
     }));
 
     res.json({
@@ -113,7 +113,7 @@ router.get("/referrers", async (req, res, next) => {
         duration: true,
       },
       _count: {
-        referrer: true,
+        _all: true,
       },
     });
 
@@ -121,7 +121,7 @@ router.get("/referrers", async (req, res, next) => {
       referrer,
       duration: _sum.duration,
       count: _sum.count,
-      sessions: _count.referrer,
+      sessions: _count._all,
     }));
 
     res.json({ referrers: prettier });
@@ -143,12 +143,12 @@ router.get("/countries", async (req, res, next) => {
         wid,
       },
       _count: {
-        country: true,
+        _all: true,
       },
     });
 
     const countrySessionMap = cData.reduce((accu, item) => {
-      accu[item.country ?? ""] = item._count.country;
+      accu[item.country ?? ""] = item._count._all;
       return accu;
     }, Object.assign({}));
     const data = await prisma.viewData.findMany({
