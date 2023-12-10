@@ -646,4 +646,24 @@ router.get("/website", async (req, res, next) => {
   }
 });
 
+router.put("/website", async (req, res, next) => {
+  const { domain, wid } = req.body;
+
+  try {
+    await prisma.website.update({
+      where: {
+        id: wid,
+      },
+      data: {
+        domain,
+      },
+    });
+
+    res.send("ok");
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
 export { router as analyticsRouter };
